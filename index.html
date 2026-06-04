@@ -487,8 +487,96 @@
             color: var(--accent);
         }
 
+        /* ===== PROJECTS ===== */
+        #projects { background: var(--bg); }
+
+        .projects-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 1.25rem;
+        }
+        .proj-card {
+            background: var(--bg2);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 1.6rem 1.75rem;
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+            transition: all 0.22s;
+            position: relative;
+            overflow: hidden;
+        }
+        .proj-card::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(135deg, rgba(56,189,248,0.04) 0%, transparent 60%);
+            pointer-events: none;
+        }
+        .proj-card:hover {
+            border-color: rgba(56,189,248,0.4);
+            transform: translateY(-4px);
+            box-shadow: var(--shadow);
+        }
+        .proj-header {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            gap: 0.75rem;
+        }
+        .proj-icon { color: var(--accent); font-size: 1.15rem; margin-top: 0.1rem; flex-shrink: 0; }
+        .proj-name {
+            font-size: 1rem;
+            font-weight: 700;
+            color: var(--white);
+            flex: 1;
+        }
+        .proj-gh-link {
+            color: var(--muted2);
+            font-size: 0.95rem;
+            transition: color 0.2s;
+            flex-shrink: 0;
+        }
+        .proj-gh-link:hover { color: var(--accent); }
+        .proj-desc {
+            color: var(--muted);
+            font-size: 0.87rem;
+            line-height: 1.65;
+            flex: 1;
+        }
+        .proj-footer {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-top: auto;
+            padding-top: 0.75rem;
+            border-top: 1px solid var(--border);
+        }
+        .proj-tags { display: flex; gap: 0.4rem; flex-wrap: wrap; }
+        .proj-lang {
+            display: flex;
+            align-items: center;
+            gap: 0.35rem;
+            font-size: 0.75rem;
+            color: var(--muted2);
+        }
+        .lang-dot {
+            width: 10px; height: 10px;
+            border-radius: 50%;
+            flex-shrink: 0;
+        }
+        .lang-py { background: #3572A5; }
+        .proj-stars {
+            display: flex;
+            align-items: center;
+            gap: 0.3rem;
+            font-size: 0.75rem;
+            color: var(--muted2);
+        }
+
         /* ===== SKILLS ===== */
-        #skills { background: var(--bg); }
+        #skills { background: var(--bg2); }
 
         .skills-grid {
             display: grid;
@@ -665,6 +753,7 @@
         <li><a href="#about">About</a></li>
         <li><a href="#experience">Experience</a></li>
         <li><a href="#publications">Publications</a></li>
+        <li><a href="#projects">Projects</a></li>
         <li><a href="#skills">Skills</a></li>
         <li><a href="#contact">Contact</a></li>
         <li>
@@ -871,6 +960,86 @@
                     <i class="fa-solid fa-arrow-up-right-from-square" style="font-size:0.68rem;"></i>
                     DOI: 10.5194/nhess-24-1341-2024
                 </a>
+            </div>
+
+        </div>
+    </div>
+</section>
+
+<!-- ===== PROJECTS ===== -->
+<section id="projects">
+    <div class="inner">
+        <p class="sec-label reveal">Open Source</p>
+        <h2 class="sec-title reveal">GitHub Projects</h2>
+        <div class="sec-line reveal"></div>
+        <div class="projects-grid">
+
+            <div class="proj-card reveal">
+                <div class="proj-header">
+                    <i class="fa-solid fa-wind proj-icon"></i>
+                    <span class="proj-name">WindRisk</span>
+                    <a href="https://github.com/ashbin-jaison/WindRisk" target="_blank" rel="noopener noreferrer" class="proj-gh-link" title="View on GitHub">
+                        <i class="fa-brands fa-github"></i>
+                    </a>
+                </div>
+                <p class="proj-desc">
+                    Probabilistic windstorm damage modelling framework. Implements statistical damage functions calibrated with historical insurance loss records, linking observed wind speed intensities to expected financial losses across Norwegian municipalities.
+                </p>
+                <div class="proj-footer">
+                    <div class="proj-tags">
+                        <span class="tag">Catastrophe Risk</span>
+                        <span class="tag">Damage Functions</span>
+                    </div>
+                    <div style="display:flex;gap:1rem;align-items:center;">
+                        <div class="proj-lang"><span class="lang-dot lang-py"></span> Python</div>
+                        <div class="proj-stars"><i class="fa-solid fa-star" style="font-size:0.65rem;color:var(--accent);"></i> 1</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="proj-card reveal">
+                <div class="proj-header">
+                    <i class="fa-solid fa-brain proj-icon"></i>
+                    <span class="proj-name">WindAI</span>
+                    <a href="https://github.com/ashbin-jaison/windai" target="_blank" rel="noopener noreferrer" class="proj-gh-link" title="View on GitHub">
+                        <i class="fa-brands fa-github"></i>
+                    </a>
+                </div>
+                <p class="proj-desc">
+                    Machine learning approaches applied to wind hazard modelling. Experiments with deep learning architectures (CNN, RNN) and ensemble methods (XGBoost, Random Forest) for probabilistic prediction and verification of extreme wind events.
+                </p>
+                <div class="proj-footer">
+                    <div class="proj-tags">
+                        <span class="tag">Deep Learning</span>
+                        <span class="tag">PyTorch</span>
+                    </div>
+                    <div style="display:flex;gap:1rem;align-items:center;">
+                        <div class="proj-lang"><span class="lang-dot lang-py"></span> Python</div>
+                        <div class="proj-stars"><i class="fa-solid fa-star" style="font-size:0.65rem;color:var(--accent);"></i> 1</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="proj-card reveal">
+                <div class="proj-header">
+                    <i class="fa-solid fa-satellite-dish proj-icon"></i>
+                    <span class="proj-name">Proactive Forecasting</span>
+                    <a href="https://github.com/ashbin-jaison/proactive-forecasting" target="_blank" rel="noopener noreferrer" class="proj-gh-link" title="View on GitHub">
+                        <i class="fa-brands fa-github"></i>
+                    </a>
+                </div>
+                <p class="proj-desc">
+                    Decision-support tool that ingests forecast output from global and regional NWP models and translates meteorological predictions into impact estimates for operational use. Prototype of the impact-based forecasting system developed during PhD research.
+                </p>
+                <div class="proj-footer">
+                    <div class="proj-tags">
+                        <span class="tag">NWP</span>
+                        <span class="tag">Impact Forecasting</span>
+                    </div>
+                    <div style="display:flex;gap:1rem;align-items:center;">
+                        <div class="proj-lang"><span class="lang-dot lang-py"></span> Python</div>
+                    </div>
+                </div>
             </div>
 
         </div>
