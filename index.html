@@ -170,8 +170,8 @@
 
         .hero-visual {
             flex-shrink: 0;
-            width: clamp(280px, 32vw, 420px);
-            height: clamp(280px, 32vw, 420px);
+            width: clamp(300px, 36vw, 460px);
+            height: clamp(420px, 52vw, 580px);
             position: relative;
             opacity: 0;
             animation: fadeUp 1s 0.7s ease forwards;
@@ -180,12 +180,10 @@
         #stormCanvas {
             width: 100%;
             height: 100%;
-            border-radius: 50%;
+            border-radius: 14px;
             display: block;
-            border: 1px solid rgba(56, 189, 248, 0.15);
-            box-shadow:
-                0 0 70px rgba(14, 165, 233, 0.15),
-                0 0 140px rgba(6, 182, 212, 0.07);
+            border: 1px solid rgba(56, 189, 248, 0.14);
+            box-shadow: 0 20px 60px rgba(0,0,0,0.45), 0 0 40px rgba(14,165,233,0.07);
         }
 
         .hero-visual-label {
@@ -763,7 +761,7 @@
         }
         @media (max-width: 900px) {
             .hero-layout { flex-direction: column-reverse; gap: 2rem; text-align: left; }
-            .hero-visual { width: 240px; height: 240px; align-self: center; }
+            .hero-visual { width: 300px; height: 420px; align-self: center; }
         }
         @media (max-width: 768px) {
             .nav-links { display: none; }
@@ -783,7 +781,7 @@
             .hero-stats { flex-wrap: wrap; gap: 1.5rem; }
         }
         @media (max-width: 480px) {
-            .hero-visual { width: 180px; height: 180px; }
+            .hero-visual { width: 270px; height: 370px; }
             .hero-btns { flex-direction: column; }
             .btn { justify-content: center; }
             .conf-grid { grid-template-columns: 1fr; }
@@ -856,7 +854,7 @@
         </div>
         <div class="hero-visual">
             <canvas id="stormCanvas"></canvas>
-            <p class="hero-visual-label">Global Storm Tracks</p>
+            <p class="hero-visual-label">Risk Modelling Framework</p>
         </div>
     </div>
 </section>
@@ -1307,238 +1305,260 @@
 
     sections.forEach(s => navObserver.observe(s));
 
-    // ===== GLOBE ANIMATION =====
+    // ===== HAZARD-EXPOSURE-VULNERABILITY FRAMEWORK DIAGRAM =====
     (function () {
         const canvas = document.getElementById('stormCanvas');
         if (!canvas) return;
         const ctx = canvas.getContext('2d');
         const DPR = Math.min(window.devicePixelRatio || 1, 2);
-        let W, H, cx, cy, GR, rot = 0.4, raf;
-        let dragging = false, lastX = 0, dragVel = 0;
-
-        // Location markers
-        const markers = [
-            { lat: 60.4, lon: 5.3,   main: true  },   // Bergen (home base)
-            { lat: 58,   lon: 2,     main: false },    // North Sea
-            { lat: 52,   lon: 4,     main: false },    // Netherlands storm belt
-            { lat: 20,   lon: -75,   main: false },    // Caribbean
-            { lat: 35,   lon: -75,   main: false },    // US East Coast
-            { lat: 15,   lon: 130,   main: false },    // W. Pacific
-            { lat: 35,   lon: 140,   main: false },    // Japan
-            { lat: 12,   lon: 55,    main: false },    // Arabian Sea
-        ];
-
-        // Storm tracks: [lat, lon] waypoints — interpolated into 120-pt curves
-        const trackDefs = [
-            {   // European windstorm (N.Atlantic → Scandinavia) — most relevant
-                pts: [[42,-52],[47,-38],[52,-22],[56,-8],[59,4],[61,12]],
-                rgb: [56,189,248], speed: 0.0022, tail: 0.4, phase: 0
-            },
-            {   // Atlantic hurricane recurving NE
-                pts: [[14,-38],[20,-62],[28,-80],[36,-76],[44,-60],[52,-38]],
-                rgb: [80,220,200], speed: 0.003, tail: 0.35, phase: 0.55
-            },
-            {   // Western Pacific typhoon
-                pts: [[10,138],[18,132],[27,131],[36,141]],
-                rgb: [130,195,255], speed: 0.004, tail: 0.3, phase: 0.25
-            },
-            {   // Bay of Bengal / Indian Ocean
-                pts: [[5,85],[10,88],[16,90],[22,92]],
-                rgb: [100,210,220], speed: 0.0035, tail: 0.28, phase: 0.75
-            },
-        ];
-
-        // Expand each track to 120 linearly-interpolated points
-        function expandTrack(def) {
-            const raw = def.pts, n = 120;
-            const computed = [];
-            for (let i = 0; i < n; i++) {
-                const t = i / (n - 1) * (raw.length - 1);
-                const s = Math.min(Math.floor(t), raw.length - 2);
-                const f = t - s;
-                computed.push([
-                    raw[s][0] + (raw[s+1][0] - raw[s][0]) * f,
-                    raw[s][1] + (raw[s+1][1] - raw[s][1]) * f
-                ]);
-            }
-            return { ...def, computed, progress: def.phase };
-        }
-        const tracks = trackDefs.map(expandTrack);
+        let W, H, raf, tick = 0;
 
         function resize() {
-            const rect = canvas.getBoundingClientRect();
-            W = rect.width; H = rect.height;
+            const r = canvas.getBoundingClientRect();
+            W = r.width; H = r.height;
             canvas.width = W * DPR; canvas.height = H * DPR;
             ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
-            cx = W / 2; cy = H / 2;
-            GR = Math.min(W, H) * 0.43;
         }
 
-        // Orthographic projection — rotate around Y-axis (longitude)
-        function proj(lat, lon) {
-            const φ = lat * Math.PI / 180;
-            const λ = lon * Math.PI / 180 + rot;
-            const x = Math.cos(φ) * Math.sin(λ);
-            const y = Math.sin(φ);
-            const z = Math.cos(φ) * Math.cos(λ);
-            return { sx: cx + GR * x, sy: cy - GR * y, z, vis: z > 0 };
+        // ── Layout (recomputed each frame so it reacts to resize) ──────────
+        function mkLayout() {
+            const px  = W * 0.056;
+            const tw  = (W - 4 * px) / 3;          // top-node width
+            const th  = Math.min(H * 0.125, 62);    // top-node height
+            const mlW = W - 2 * px;
+            const mlH = Math.min(H * 0.175, 85);
+            const oW  = W * 0.58;
+            const oH  = Math.min(H * 0.115, 56);
+            const yT  = H * 0.11 + th / 2;          // top row centre-Y
+            const yM  = H * 0.49;                   // ML centre-Y
+            const yO  = H * 0.845;                  // output centre-Y
+            const x1  = px + tw / 2;
+            const x2  = W / 2;
+            const x3  = W - px - tw / 2;
+            return {
+                haz: { x:x1, y:yT, w:tw,  h:th,  color:'#60a5fa', title:'HAZARD',         sub:'NORA3 · ERA5 · MEPS'              },
+                exp: { x:x2, y:yT, w:tw,  h:th,  color:'#fbbf24', title:'EXPOSURE',        sub:'Buildings · Population'           },
+                vul: { x:x3, y:yT, w:tw,  h:th,  color:'#c084fc', title:'VULNERABILITY',   sub:'Hist. Damage Records'             },
+                ml:  { x:x2, y:yM, w:mlW, h:mlH, color:'#38bdf8', title:'ML / AI ENGINE',  sub:'Random Forest · XGBoost · CNN · RNN · PyTorch' },
+                out: { x:x2, y:yO, w:oW,  h:oH,  color:'#34d399', title:'RISK ESTIMATE',   sub:'Probabilistic Loss Output'        },
+            };
         }
 
-        function drawAtmosphere() {
-            const a = ctx.createRadialGradient(cx, cy, GR * 0.9, cx, cy, GR * 1.22);
-            a.addColorStop(0,   'rgba(56,189,248,0.10)');
-            a.addColorStop(0.5, 'rgba(14,165,233,0.04)');
-            a.addColorStop(1,   'transparent');
-            ctx.beginPath(); ctx.arc(cx, cy, GR * 1.22, 0, Math.PI * 2);
-            ctx.fillStyle = a; ctx.fill();
+        // ── Helpers ─────────────────────────────────────────────────────────
+        function rr(x, y, w, h, r) {
+            ctx.beginPath();
+            ctx.moveTo(x + r, y);
+            ctx.arcTo(x+w, y,   x+w, y+h, r);
+            ctx.arcTo(x+w, y+h, x,   y+h, r);
+            ctx.arcTo(x,   y+h, x,   y,   r);
+            ctx.arcTo(x,   y,   x+w, y,   r);
+            ctx.closePath();
         }
 
-        function drawSphere() {
-            // Base fill
-            const g = ctx.createRadialGradient(cx - GR*0.28, cy - GR*0.28, GR*0.04, cx, cy, GR);
-            g.addColorStop(0,   '#1a3560');
-            g.addColorStop(0.55,'#0d1e42');
-            g.addColorStop(1,   '#060d22');
-            ctx.beginPath(); ctx.arc(cx, cy, GR, 0, Math.PI * 2);
-            ctx.fillStyle = g; ctx.fill();
-            // Specular sheen
-            const s = ctx.createRadialGradient(cx - GR*0.32, cy - GR*0.32, 0, cx - GR*0.18, cy - GR*0.18, GR*0.6);
-            s.addColorStop(0, 'rgba(120,190,255,0.09)');
-            s.addColorStop(1, 'transparent');
-            ctx.beginPath(); ctx.arc(cx, cy, GR, 0, Math.PI * 2);
-            ctx.fillStyle = s; ctx.fill();
-            // Border glow
-            ctx.beginPath(); ctx.arc(cx, cy, GR, 0, Math.PI * 2);
-            ctx.strokeStyle = 'rgba(56,189,248,0.25)'; ctx.lineWidth = 1.2; ctx.stroke();
-        }
-
-        function drawGrid() {
-            // Latitude lines
-            [-60,-30,0,30,60].forEach((lat, i) => {
-                const alpha = lat === 0 ? 0.22 : 0.09;
-                const lw    = lat === 0 ? 0.9  : 0.5;
-                ctx.beginPath(); let pen = false;
-                for (let lo = -180; lo <= 181; lo += 3) {
-                    const p = proj(lat, lo);
-                    if (p.vis) { pen ? ctx.lineTo(p.sx, p.sy) : ctx.moveTo(p.sx, p.sy); pen = true; }
-                    else pen = false;
-                }
-                ctx.strokeStyle = `rgba(56,189,248,${alpha})`; ctx.lineWidth = lw; ctx.stroke();
-            });
-            // Longitude lines
-            for (let lo = -180; lo < 180; lo += 30) {
-                ctx.beginPath(); let pen = false;
-                for (let la = -88; la <= 88; la += 3) {
-                    const p = proj(la, lo);
-                    if (p.vis) { pen ? ctx.lineTo(p.sx, p.sy) : ctx.moveTo(p.sx, p.sy); pen = true; }
-                    else pen = false;
-                }
-                ctx.strokeStyle = 'rgba(56,189,248,0.07)'; ctx.lineWidth = 0.5; ctx.stroke();
+        function fitFont(text, maxW, maxSz, weight) {
+            let sz = maxSz;
+            ctx.font = `${weight ? weight + ' ' : ''}${sz}px system-ui,sans-serif`;
+            while (sz > 5.5 && ctx.measureText(text).width > maxW) {
+                sz -= 0.4;
+                ctx.font = `${weight ? weight + ' ' : ''}${sz}px system-ui,sans-serif`;
             }
         }
 
-        function drawTracks() {
-            tracks.forEach(tr => {
-                tr.progress = (tr.progress + tr.speed) % 1;
-                const pts = tr.computed, n = pts.length;
-                const head = Math.floor(tr.progress * n);
-                const tailN = Math.floor(tr.tail * n);
-                const tailStart = Math.max(0, head - tailN);
-                const [r,g,b] = tr.rgb;
+        // Evaluate cubic bezier at t
+        function bez(x0,y0,x1,y1,x2,y2,x3,y3, t) {
+            const u = 1-t;
+            return {
+                x: u*u*u*x0 + 3*u*u*t*x1 + 3*u*t*t*x2 + t*t*t*x3,
+                y: u*u*u*y0 + 3*u*u*t*y1 + 3*u*t*t*y2 + t*t*t*y3,
+            };
+        }
 
-                // Draw tail segments with fading alpha
-                for (let i = tailStart + 1; i <= head; i++) {
-                    const p0 = proj(pts[i-1][0], pts[i-1][1]);
-                    const p1 = proj(pts[i][0],   pts[i][1]);
-                    if (!p0.vis || !p1.vis) continue;
-                    const fade = (i - tailStart) / (head - tailStart + 1);
-                    const depth = (p0.z + p1.z) / 2;
-                    ctx.beginPath();
-                    ctx.moveTo(p0.sx, p0.sy); ctx.lineTo(p1.sx, p1.sy);
-                    ctx.strokeStyle = `rgba(${r},${g},${b},${fade * depth * 0.9})`;
-                    ctx.lineWidth = 1.2 + fade * 1.0; ctx.stroke();
-                }
+        // Build bezier control points: exit bottom-of-a, enter top-of-b
+        function ctrlPts(a, b) {
+            const x0 = a.x, y0 = a.y + a.h/2;
+            const x3 = b.x, y3 = b.y - b.h/2;
+            const my = (y0 + y3) / 2;
+            return [x0, y0, x0, my, x3, my, x3, y3];
+        }
 
-                // Head dot + glow
-                if (head > 0) {
-                    const hp = proj(pts[Math.min(head, n-1)][0], pts[Math.min(head, n-1)][1]);
-                    if (hp.vis) {
-                        const gl = ctx.createRadialGradient(hp.sx, hp.sy, 0, hp.sx, hp.sy, 11);
-                        gl.addColorStop(0, `rgba(${r},${g},${b},0.55)`);
-                        gl.addColorStop(1, 'transparent');
-                        ctx.beginPath(); ctx.arc(hp.sx, hp.sy, 11, 0, Math.PI * 2);
-                        ctx.fillStyle = gl; ctx.fill();
-                        ctx.beginPath(); ctx.arc(hp.sx, hp.sy, 2.5, 0, Math.PI * 2);
-                        ctx.fillStyle = `rgb(${r},${g},${b})`; ctx.fill();
-                    }
+        // ── Stream definitions ───────────────────────────────────────────────
+        //  particles cycling 0→1 along each bezier path
+        const streams = [
+            { from:'haz', to:'ml',  color:'#60a5fa', n:5, offset:0.00 },
+            { from:'exp', to:'ml',  color:'#fbbf24', n:5, offset:0.33 },
+            { from:'vul', to:'ml',  color:'#c084fc', n:5, offset:0.66 },
+            { from:'ml',  to:'out', color:'#34d399', n:8, offset:0.20 },
+        ];
+
+        // ── Draw functions ───────────────────────────────────────────────────
+        function drawConnector(a, b, color) {
+            const [x0,y0,x1,y1,x2,y2,x3,y3] = ctrlPts(a, b);
+            ctx.beginPath();
+            ctx.moveTo(x0,y0);
+            ctx.bezierCurveTo(x1,y1,x2,y2,x3,y3);
+            ctx.strokeStyle = color + '25';
+            ctx.lineWidth = 1;
+            ctx.setLineDash([5,5]);
+            ctx.stroke();
+            ctx.setLineDash([]);
+        }
+
+        function drawParticles(lo, t) {
+            streams.forEach(s => {
+                const a = lo[s.from], b = lo[s.to];
+                const cp = ctrlPts(a, b);
+                for (let i = 0; i < s.n; i++) {
+                    const pt = ((t + s.offset + i / s.n) % 1);
+                    const p  = bez(...cp, pt);
+                    const alpha = Math.sin(pt * Math.PI);
+                    // Glow halo
+                    const gl = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, 7);
+                    gl.addColorStop(0, s.color + Math.round(alpha * 90).toString(16).padStart(2,'0'));
+                    gl.addColorStop(1, 'transparent');
+                    ctx.beginPath(); ctx.arc(p.x, p.y, 7, 0, Math.PI * 2);
+                    ctx.fillStyle = gl; ctx.fill();
+                    // Core dot
+                    ctx.beginPath(); ctx.arc(p.x, p.y, 2.5, 0, Math.PI * 2);
+                    ctx.fillStyle = s.color + Math.round(alpha * 230).toString(16).padStart(2,'0');
+                    ctx.fill();
                 }
             });
         }
 
-        function drawMarkers() {
-            const now = Date.now();
-            markers.forEach(m => {
-                const p = proj(m.lat, m.lon);
-                if (!p.vis) return;
-                const a = Math.min(p.z * 1.6, 1);
-
-                if (m.main) {
-                    // Bergen — pulsing ring
-                    const pulse = (Math.sin(now * 0.0028) + 1) / 2;
-                    ctx.beginPath();
-                    ctx.arc(p.sx, p.sy, 4 + 12 * pulse, 0, Math.PI * 2);
-                    ctx.strokeStyle = `rgba(56,189,248,${0.5 * (1 - pulse) * a})`;
-                    ctx.lineWidth = 1.2; ctx.stroke();
-                    ctx.beginPath(); ctx.arc(p.sx, p.sy, 4.5, 0, Math.PI * 2);
-                    ctx.fillStyle = `rgba(56,189,248,${a})`; ctx.fill();
-                } else {
-                    ctx.beginPath(); ctx.arc(p.sx, p.sy, 2, 0, Math.PI * 2);
-                    ctx.fillStyle = `rgba(160,215,255,${a * 0.65})`; ctx.fill();
-                }
+        function drawNNDecor(ml) {
+            // Subtle neural-network texture inside the ML node (clipped)
+            rr(ml.x - ml.w/2, ml.y - ml.h/2, ml.w, ml.h, 9);
+            ctx.save(); ctx.clip();
+            const layers = [3, 4, 4, 3];
+            const xSpan = ml.w * 0.55;
+            const lxs   = layers.map((_, i) => ml.x + (i/(layers.length-1) - 0.5) * xSpan);
+            const nets   = layers.map((cnt, li) =>
+                Array.from({length: cnt}, (_, ni) => ({
+                    x: lxs[li],
+                    y: ml.y + (ni - (cnt-1)/2) * (ml.h * 0.22),
+                }))
+            );
+            // Connections
+            for (let li = 0; li < nets.length - 1; li++) {
+                nets[li].forEach(a => nets[li+1].forEach(b => {
+                    const active = Math.sin(tick * 0.06 + a.x * 0.09 + b.y * 0.13) > 0.15;
+                    ctx.beginPath(); ctx.moveTo(a.x, a.y); ctx.lineTo(b.x, b.y);
+                    ctx.strokeStyle = active ? 'rgba(56,189,248,0.16)' : 'rgba(56,189,248,0.05)';
+                    ctx.lineWidth = 0.7; ctx.stroke();
+                }));
+            }
+            // Nodes
+            nets.flat().forEach(n => {
+                const on = Math.sin(tick * 0.09 + n.x * 0.11 + n.y * 0.14) > 0;
+                ctx.beginPath(); ctx.arc(n.x, n.y, on ? 3.2 : 2.0, 0, Math.PI * 2);
+                ctx.fillStyle = on ? 'rgba(56,189,248,0.60)' : 'rgba(56,189,248,0.18)';
+                ctx.fill();
             });
+            ctx.restore();
         }
 
+        function drawNode(n, pulse) {
+            const bx = n.x - n.w/2, by = n.y - n.h/2;
+            const radius = Math.min(9, n.h * 0.18);
+
+            // Background with glow
+            ctx.shadowColor = n.color;
+            ctx.shadowBlur  = 8 + pulse * 7;
+            rr(bx, by, n.w, n.h, radius);
+            ctx.fillStyle = 'rgba(9,16,34,0.94)';
+            ctx.fill();
+            ctx.shadowBlur = 0;
+
+            // Border
+            rr(bx, by, n.w, n.h, radius);
+            ctx.strokeStyle = n.color + Math.round((0.42 + pulse * 0.38) * 255).toString(16).padStart(2,'0');
+            ctx.lineWidth = 1.5;
+            ctx.stroke();
+
+            const maxTW = n.w * 0.88;
+
+            // Title
+            fitFont(n.title, maxTW, Math.min(n.h * 0.3, 12), '600');
+            ctx.fillStyle = '#f1f5f9';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText(n.title, n.x, n.y - n.h * 0.14);
+
+            // Sub-label
+            fitFont(n.sub, maxTW * 0.93, Math.min(n.h * 0.21, 9), '');
+            ctx.fillStyle = n.color + 'bb';
+            ctx.fillText(n.sub, n.x, n.y + n.h * 0.20);
+        }
+
+        // Arrow head at point (px,py) pointing downward
+        function arrowHead(px, py, color) {
+            ctx.beginPath();
+            ctx.moveTo(px, py);
+            ctx.lineTo(px - 5, py - 9);
+            ctx.lineTo(px + 5, py - 9);
+            ctx.closePath();
+            ctx.fillStyle = color + '60';
+            ctx.fill();
+        }
+
+        // ── Main render loop ─────────────────────────────────────────────────
         function frame() {
-            // Inertia: keep spinning after drag release
-            if (!dragging) {
-                rot += 0.0025 + dragVel;
-                dragVel *= 0.94;
-            }
+            tick++;
             ctx.clearRect(0, 0, W, H);
-            drawAtmosphere();
-            drawSphere();
-            drawGrid();
-            drawTracks();
-            drawMarkers();
+
+            const lo    = mkLayout();
+            const t     = (tick * 0.004) % 1;
+            const pulse = (Math.sin(tick * 0.04) + 1) / 2;
+
+            // Background tint
+            ctx.fillStyle = 'rgba(9,15,30,0.85)';
+            ctx.fillRect(0, 0, W, H);
+
+            // Connector lines
+            ['haz','exp','vul'].forEach(k => drawConnector(lo[k], lo.ml, lo[k].color));
+            drawConnector(lo.ml, lo.out, lo.out.color);
+
+            // Arrow tips
+            arrowHead(lo.haz.x, lo.ml.y - lo.ml.h/2, lo.haz.color);
+            arrowHead(lo.exp.x, lo.ml.y - lo.ml.h/2, lo.exp.color);
+            arrowHead(lo.vul.x, lo.ml.y - lo.ml.h/2, lo.vul.color);
+            arrowHead(lo.out.x, lo.out.y - lo.out.h/2, lo.out.color);
+
+            // Particles
+            drawParticles(lo, t);
+
+            // NN decoration inside ML node (before border is drawn)
+            drawNNDecor(lo.ml);
+
+            // All nodes
+            ['haz','exp','vul','out','ml'].forEach(k => drawNode(lo[k], pulse));
+
+            // Section header labels
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.font = '500 9px system-ui,sans-serif';
+
+            ctx.fillStyle = 'rgba(148,163,184,0.5)';
+            ctx.fillText('INPUTS', W/2, H * 0.055);
+
+            const midY1 = (lo.haz.y + lo.haz.h/2 + lo.ml.y - lo.ml.h/2) / 2;
+            ctx.fillStyle = 'rgba(148,163,184,0.32)';
+            ctx.fillText('↓  feeds into  ↓', W/2, midY1);
+
+            const midY2 = (lo.ml.y + lo.ml.h/2 + lo.out.y - lo.out.h/2) / 2;
+            ctx.fillText('↓  outputs  ↓', W/2, midY2);
+
             raf = requestAnimationFrame(frame);
         }
 
-        // Drag-to-rotate
-        function onDown(x) { dragging = true; lastX = x; dragVel = 0; }
-        function onMove(x) {
-            if (!dragging) return;
-            dragVel = (x - lastX) * 0.008;
-            rot += dragVel;
-            lastX = x;
-        }
-        function onUp() { dragging = false; }
-
-        canvas.addEventListener('mousedown',  e => onDown(e.clientX));
-        canvas.addEventListener('mousemove',  e => onMove(e.clientX));
-        canvas.addEventListener('mouseup',    onUp);
-        canvas.addEventListener('mouseleave', onUp);
-        canvas.addEventListener('touchstart', e => onDown(e.touches[0].clientX), { passive: true });
-        canvas.addEventListener('touchmove',  e => { e.preventDefault(); onMove(e.touches[0].clientX); }, { passive: false });
-        canvas.addEventListener('touchend',   onUp);
-
-        // Pause off-screen
+        // Pause when off-screen
         const visObs = new IntersectionObserver(entries => {
             if (entries[0].isIntersecting) { if (!raf) raf = requestAnimationFrame(frame); }
             else { cancelAnimationFrame(raf); raf = null; }
         }, { threshold: 0.1 });
         visObs.observe(canvas);
 
-        window.addEventListener('resize', () => resize());
+        window.addEventListener('resize', resize);
         resize();
         raf = requestAnimationFrame(frame);
     })();
